@@ -31,11 +31,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sync submodules over HTTPS
+      - name: Clone Clash.Meta Core
         run: |
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          rm -rf core/Clash.Meta
+          git clone --depth=1 -b FlClash https://github.com/chen08209/Clash.Meta.git core/Clash.Meta
 
       - name: Test git hooks
         run: bash tool/hooks/test.sh
@@ -72,7 +71,6 @@ jobs:
 
       - name: Run tests
         run: |
-          # فیلتر کردن تست‌های وابسته به کلیدهای تولیدشده هسته Go
           TEST_FILES=$(find test -name "*_test.dart" ! -name "dns_override_test.dart" ! -name "ntp_override_test.dart")
           flutter test $TEST_FILES --reporter expanded --coverage
 
@@ -122,11 +120,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Sync submodules over HTTPS
+      - name: Clone Clash.Meta Core
+        shell: bash
         run: |
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          rm -rf core/Clash.Meta
+          git clone --depth=1 -b FlClash https://github.com/chen08209/Clash.Meta.git core/Clash.Meta
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -172,8 +170,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Compiles the desktop runners and the native plugin code that only the
-      # tagged release matrix built before; the bundle itself is discarded.
       - name: Build debug bundle
         run: flutter build ${{ matrix.platform }} --debug
 
@@ -185,11 +181,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Sync submodules over HTTPS
+      - name: Clone Clash.Meta Core
         run: |
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          rm -rf core/Clash.Meta
+          git clone --depth=1 -b FlClash https://github.com/chen08209/Clash.Meta.git core/Clash.Meta
+          test -f core/Clash.Meta/go.mod || { echo 'Clash.Meta not found!' >&2; exit 1; }
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -233,11 +229,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sync submodules over HTTPS
+      - name: Clone Clash.Meta Core
         run: |
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          rm -rf core/Clash.Meta
+          git clone --depth=1 -b FlClash https://github.com/chen08209/Clash.Meta.git core/Clash.Meta
+          test -f core/Clash.Meta/go.mod || { echo 'Clash.Meta not found!' >&2; exit 1; }
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -284,8 +280,6 @@ jobs:
           test -d "$wrapper" || flutter precache
           cp -R "$wrapper/." .
           chmod +x gradlew
-          # No JVM unit test loads the Core or the Flutter build, but `:core` compiles against
-          # the gomobile AAR, so one ABI of it is built.
           ./gradlew :common:testDebugUnitTest :service:testDebugUnitTest :app:testDebugUnitTest \
             -Ptarget-platform=android-arm64 \
             -x :app:compileFlutterBuildDebug -x :app:copyFlutterAssetsDebug
@@ -335,7 +329,6 @@ jobs:
         run: cargo test --manifest-path services/helper/Cargo.toml --features windows-service
 
   build:
-    # Releases publish where the release links point: the public repository.
     if: github.repository == 'chen08209/FlClash' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: [ dart, plugins, go, android, rust, windows-helper-test ]
     runs-on: ${{ matrix.os }}
@@ -376,12 +369,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Sync submodules over HTTPS
+      - name: Clone Clash.Meta Core
         shell: bash
         run: |
-          git config --global url."https://github.com/".insteadOf "git@github.com:"
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          rm -rf core/Clash.Meta
+          git clone --depth=1 -b FlClash https://github.com/chen08209/Clash.Meta.git core/Clash.Meta
 
       - name: Setup Android Signing
         if: startsWith(matrix.platform,'android')
@@ -415,8 +407,6 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         run: git config --global core.longpaths true
 
-      # Stable publishes no Windows or Linux arm64 archive; master makes the action
-      # clone the SDK at the pinned tag and let it fetch the host's own Dart SDK.
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -444,7 +434,6 @@ jobs:
           flutter --version
           flutter pub get
 
-      # See .agents/flutter-upgrade.md before bumping FLUTTER_VERSION.
       - name: Disable Impeller on Intel macOS
         if: matrix.platform == 'macos' && matrix.arch == 'amd64'
         run: plutil -replace FLTEnableImpeller -bool NO macos/Runner/Info.plist
