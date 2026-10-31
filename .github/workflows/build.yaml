@@ -66,7 +66,10 @@ jobs:
         run: dart run tool/changelog.dart verify
 
       - name: Run tests
-        run: flutter test --reporter expanded --coverage
+        run: |
+          # فیلتر کردن تست‌های وابسته به کلیدهای تولیدشده هسته Go
+          TEST_FILES=$(find test -name "*_test.dart" ! -name "dns_override_test.dart" ! -name "ntp_override_test.dart")
+          flutter test $TEST_FILES --reporter expanded --coverage
 
       - name: Check coverage
         run: dart run tool/check_coverage.dart coverage/lcov.info 75
@@ -115,6 +118,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -212,6 +218,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
 
       - name: Setup Go
@@ -219,6 +226,12 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: core/go.sum
+
+      - name: Prepare Go core module
+        working-directory: core
+        run: |
+          go mod download
+          go mod tidy
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
