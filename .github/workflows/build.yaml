@@ -133,6 +133,17 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: core/go.sum
 
+      - name: Prepare Go modules for Desktop
+        shell: bash
+        working-directory: core
+        run: |
+          go mod tidy
+          if [ -d "Clash.Meta" ]; then
+            cd Clash.Meta
+            go mod tidy
+            cd ..
+          fi
+
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -153,7 +164,7 @@ jobs:
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build libgtk-3-dev libayatana-appindicator3-dev libsecret-1-dev
+          sudo apt-get install -y build-essential clang ninja-build libgtk-3-dev libayatana-appindicator3-dev libsecret-1-dev
 
       - name: Setup Xcode
         if: matrix.platform == 'macos'
@@ -164,6 +175,20 @@ jobs:
       - name: Enable git long paths (Windows)
         if: matrix.platform == 'windows'
         run: git config --global core.longpaths true
+
+      - name: Skip Core build hook for desktop test bundle
+        shell: python
+        run: |
+          import re
+          with open("pubspec.yaml", "r", encoding="utf-8") as f:
+              content = f.read()
+          # غیرفعال کردن هوک بیلد هسته تا بدون خطا رانر پلتفرم بیلد شود
+          if "build_assets:" in content:
+              content = re.sub(r'build_assets:\s*true', 'build_assets: false', content)
+          else:
+              content += "\nhooks:\n  user_defines:\n    setup:\n      build_assets: false\n"
+          with open("pubspec.yaml", "w", encoding="utf-8") as f:
+              f.write(content)
 
       - name: Install dependencies
         run: flutter pub get
@@ -397,6 +422,12 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: core/go.sum
+
+      - name: Prepare Go module
+        shell: bash
+        working-directory: core
+        run: |
+          go mod tidy
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
