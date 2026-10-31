@@ -21,8 +21,6 @@ env:
 jobs:
   dart:
     name: Dart
-    # A private copy pays for its Actions minutes, so it runs the checks only when
-    # started by hand.
     if: &checks github.event_name == 'workflow_dispatch' || !github.event.repository.private
     runs-on: ubuntu-latest
     steps:
@@ -198,6 +196,7 @@ jobs:
         env:
           CGO_ENABLED: 0
         run: |
+          go mod tidy
           if ! compgen -G '*_test.go' > /dev/null; then
             echo 'No Go tests found in core/; the test step would pass vacuously.' >&2
             exit 1
@@ -217,6 +216,7 @@ jobs:
         run: |
           tags="$(sed -n 's/^tags: *//p' ../build_config.yaml)"
           test -n "$tags" || { echo 'Could not read tags from build_config.yaml' >&2; exit 1; }
+          GOOS=android GOARCH=arm64 go mod tidy
           GOOS=android GOARCH=arm64 go vet "-tags=$tags" . ./mobile ./tun ./platform
 
   android:
@@ -240,6 +240,12 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache-dependency-path: core/go.sum
+
+      - name: Prepare Go core module
+        working-directory: core
+        run: |
+          go mod tidy
+          GOOS=android GOARCH=arm64 go mod tidy
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
