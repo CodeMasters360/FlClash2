@@ -470,7 +470,7 @@ jobs:
           if [ -n "$SERVICE_JSON" ]; then
             echo "$SERVICE_JSON" | base64 --decode > android/app/google-services.json
           else
-            echo '{"project_info":{"project_number":"0","project_id":"flclash"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0","android_client_info":{"package_name":"com.chen08209.flclash"}},"api_key":[{"current_key":""}]}]}' > android/app/google-services.json
+            echo '{"project_info":{"project_number":"0","project_id":"flclash"},"client":[{"client_info":{"mobilesdk_app_id":"1:0:android:0","android_client_info":{"package_name":"com.follow.clash"}},"api_key":[{"current_key":""}]}]}' > android/app/google-services.json
           fi
 
       - name: Setup Go
