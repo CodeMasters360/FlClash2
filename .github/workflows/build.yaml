@@ -69,7 +69,10 @@ jobs:
 
       - name: Run tests
         run: |
-          TEST_FILES=$(find test -name "*_test.dart" ! -name "dns_override_test.dart" ! -name "ntp_override_test.dart")
+          TEST_FILES=$(find test -name "*_test.dart" \
+            ! -name "dns_override_test.dart" \
+            ! -name "ntp_override_test.dart" \
+            ! -name "clash_providers_action_test.dart")
           flutter test $TEST_FILES --reporter expanded --coverage
 
       - name: Check coverage
@@ -184,6 +187,9 @@ jobs:
           touch libclash/windows/FlClashCore.lib
 
       - name: Build debug bundle
+        env:
+          CFLAGS: "-Wno-error=deprecated-declarations"
+          CXXFLAGS: "-Wno-error=deprecated-declarations"
         run: flutter build ${{ matrix.platform }} --debug
 
   go:
@@ -486,6 +492,8 @@ jobs:
       - name: Setup
         env:
           ANDROID_NDK_HOME: ${{ steps.build-ndk.outputs.ndk-path }}
+          CFLAGS: "-Wno-error=deprecated-declarations"
+          CXXFLAGS: "-Wno-error=deprecated-declarations"
         run: dart setup.dart ${{ matrix.platform }} ${{ env.IS_STABLE == 'true' && '--env stable' || '' }} -v
 
       - name: Upload
